@@ -1,0 +1,1101 @@
+vue create vue-kanban-board
+
+
+<template>
+  <div class="board">
+    <div class="column" v-for="(column, columnIndex) in columns" :key="columnIndex">
+      <h2>{{ column.title }}</h2>
+      <div class="card" v-for="(card, cardIndex) in column.cards" :key="cardIndex" :draggable="true"
+        @dragstart="dragStart(columnIndex, cardIndex)" @dragover="dragOver(columnIndex, cardIndex)"
+        @dragend="dragEnd" @drop="drop(columnIndex, cardIndex)">
+        {{ card }}
+      </div>
+    </div>
+  </div>
+</templazzzzzte>
+
+<script>
+export default {
+  data() {
+    return {
+      columns: [
+        {
+          title: 'To Do',
+          cards: ['Task 1', 'Task 2', 'Task 3']
+        },
+        {
+          title: 'In Progress',
+          cards: ['Task 4', 'Task 5']
+        },
+        {
+          title: 'Done',
+          cards: ['Task 6']
+        }
+      ],
+      draggedCard: null, 
+      draggedCardIndex: null
+    };
+  },
+  methods: {
+    dragStart(columnIndex, cardIndex) {
+      this.draggedCard = this.columns[columnIndex].cards[cardIndex];
+      this.draggedCardIndex = cardIndex;
+    },
+    dragOver(columnIndex, cardIndex) {
+      if (this.draggedCard) {
+        // Move the card to the new position
+        const sourceColumn = this.columns.findIndex(col => col.cards.includes(this.draggedCard));
+        const cardToMove = this.columns[sourceColumn].cards.splice(this.draggedCardIndex, 1)[0];
+        this.columns[columnIndex].cards.splice(cardIndex, 0, cardToMove);
+        this.draggedCardIndex = cardIndex;
+      }
+    },
+    dragEnd() {
+      this.draggedCard = null;
+      this.draggedCardIndex = null;
+    },
+    drop(columnIndex, cardIndex) {
+      // Prevent the default behavior of the drop event
+      event.preventDefault();
+    }
+  }
+};
+</script>
+
+<style scoped>
+.board { 
+  display: flex;
+}
+
+.column {
+  flex: 1;
+  padding: 16px;
+  background-color: #f2f2f2;
+  border-radius: 4px;
+  margin: 8px;
+}
+
+.card {
+  background-color: #fff;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  cursor: move;
+}
+</style>
+
+
+
+
+
+
+
+-------------------------------------------
+<template>
+  <div>
+    <h1>Kanban Board</h1>
+    <board />
+  </div>
+</template>
+
+<script>
+import Board from './components/Board.vue';
+
+export default {
+  components: {
+    Board
+  }
+};
+</script>
+
+
+--------------------------------------------------------------------
+
+import Vue from 'vue';
+import App from './App.vue';
+
+Vue.config.productionTip = false;
+
+new Vue({
+  render: h => h(App)
+}).$mount('#app');
+
+
+---------------------------------------
+npm run serve
+
+
+=========================================================================================================================
+
+Dynamicaly with Json server
+
+
+<template>
+  <main>
+    <div class="board">
+      <div class="column" v-for="(column, columnIndex) in columns" :key="columnIndex">
+        <h2>{{ column.title }}</h2>
+        <div class="card" v-for="(card, cardIndex) in column.cards" :key="card.id" :draggable="true"
+          @dragstart="dragStart(columnIndex, cardIndex)" @dragover="dragOver(columnIndex, cardIndex)"
+          @dragend="dragEnd" @drop="drop(columnIndex, cardIndex)">
+          {{ card.name }}
+        </div>
+      </div>
+    </div>
+  </main>
+</template>
+
+<script>
+import axios from 'axios';
+
+export default {
+  // eslint-disable-next-line vue/multi-word-component-names
+  name: 'Board',
+  data() {
+    return {
+      columns: [],
+      draggedCard: null,
+      draggedCardIndex: null,
+    };
+  },
+  mounted() {
+    this.fetchData();
+  },
+  methods: {
+    async fetchData() {
+      try {
+        const response = await axios.get('http://localhost:3000/columns');
+        this.columns = response.data;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    dragStart(columnIndex, cardIndex) {
+      this.draggedCard = this.columns[columnIndex].cards[cardIndex];
+      this.draggedCardIndex = cardIndex;
+    },
+    dragOver(columnIndex, cardIndex) {
+      if (this.draggedCard) {
+        // Move the card to the new position
+        const sourceColumn = this.columns.findIndex((col) => col.cards.includes(this.draggedCard));
+        const cardToMove = this.columns[sourceColumn].cards.splice(this.draggedCardIndex, 1)[0];
+        this.columns[columnIndex].cards.splice(cardIndex, 0, cardToMove);
+        this.draggedCardIndex = cardIndex;
+      }
+    },
+    dragEnd() {
+      this.draggedCard = null;
+      this.draggedCardIndex = null;
+    },
+
+    drop(columnIndex, cardIndex) {
+      event.preventDefault();
+    },
+  },
+};
+</script>
+
+<style scoped>
+.board {
+  display: flex;
+}
+
+.column {
+  flex: 1;
+  padding: 16px;
+  background-color: #f2f2f2;
+  border-radius: 4px;
+  margin: 8px;
+}
+
+.card {
+  background-color: #fff;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  cursor: move;
+}
+</style>
+
+---------------------------------------- db.json --------------------------------------------------------
+
+{
+  "columns": [
+    {
+      "id": 1,
+      "title": "To Do",
+      "cards": [
+        { "id": 1, "name": "Task 1" },
+        { "id": 2, "name": "Task 2" },
+        { "id": 3, "name": "Task 3" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "In Progress",
+      "cards": [
+        { "id": 4, "name": "Task 4" },
+        { "id": 5, "name": "Task 5" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Done",
+      "cards": [
+        { "id": 6, "name": "Task 6" },
+        { "id": 7, "name": "Task 7" }
+      ]
+    }
+  ]
+}
+
+------------------------------------------------------------------------------------------------------------
+npm install -g json-server
+To start the JSON Server with the db.json file, navigate to the directory where the file is located and run the following command:
+json-server --watch db.json
+   
+--------------------------------------------------------------------------------------------------------
+
+using spring boot
+====================
+====================
+
+@Entity
+public class Column {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String title;
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "column")
+    private List<Card> cards = new ArrayList<>();
+    
+    // getters and setters
+}
+
+@Entity
+public class Card {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+    @ManyToOne
+    @JoinColumn(name = "column_id")
+    private Column column;
+    
+    // getters and setters
+}
+-------------------------------------------------------------------------------
+@Repository
+public interface ColumnRepository extends JpaRepository<Column, Long> {
+}
+
+@Repository
+public interface CardRepository extends JpaRepository<Card, Long> {
+}
+
+---------------------------------------------------------------------------------
+@RestController
+@RequestMapping("/api/columns")
+public class ColumnController {
+    private final ColumnRepository columnRepository;
+    
+    public ColumnController(ColumnRepository columnRepository) {
+        this.columnRepository = columnRepository;
+    }
+    
+    @GetMapping
+    public List<Column> getAllColumns() {
+        return columnRepository.findAll();
+    }
+    
+    @PostMapping
+    public Column createColumn(@RequestBody Column column) {
+        return columnRepository.save(column);
+    }
+    
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteColumn(@PathVariable("id") Long id) {
+        columnRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
+}
+----------------------------------------------------------------------------------------
+spring.datasource.url=jdbc:mysql://localhost:3306/kanban_board?useSSL=false&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=password
+spring.jpa.hibernate.ddl-auto=create
+
+
+=====================================================================================================
+
+
+use pinia state management
+==========================
+
+npm install pinia axios
+
+=>Create a Pinia store for managing the Kanban board state:
+
+import { createPinia } from 'pinia';
+
+const pinia = createPinia();
+
+export default pinia;
+
+-------------------------------------------
+import { useKanbanStore } from '@/store';
+
+export default {
+  name: 'Board',
+  setup() {
+    const kanban = useKanbanStore();
+
+    // Fetch data from the backend
+    const fetchData = async () => {
+      try {
+        const response = await axios.get('/api/columns');
+        kanban.setColumns(response.data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    // Drag and drop logic
+    const dragStart = (columnIndex, cardIndex) => {
+      // Set the dragged card
+      kanban.setDraggedCard({
+        columnIndex,
+        cardIndex,
+        card: kanban.columns[columnIndex].cards[cardIndex],
+      });
+    };
+
+    const dragOver = (columnIndex, cardIndex) => {
+      // Handle drag over logic
+    };
+
+    const dragEnd = () => {
+      // Clear the dragged card
+      kanban.clearDraggedCard();
+    };
+
+    const drop = (columnIndex, cardIndex) => {
+      // Handle the drop logic
+    };
+
+    return {
+      kanban,
+      fetchData,
+      dragStart,
+      dragOver,
+      dragEnd,
+      drop,
+    };
+  },
+  mounted() {
+    this.fetchData();
+  },
+};
+-----------------------------------------------------------------------------------
+import { createApp } from 'vue';
+import App from './App.vue';
+import pinia from './store';
+
+const app = createApp(App);
+app.use(pinia);
+app.mount('#app');
+
+
+================================== crud application =======================================
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/columns")
+public class ColumnController {
+    private final ColumnRepository columnRepository;
+    private final CardRepository cardRepository;
+
+    @Autowired
+    public ColumnController(ColumnRepository columnRepository, CardRepository cardRepository) {
+        this.columnRepository = columnRepository;
+        this.cardRepository = cardRepository;
+    }
+
+    @GetMapping
+    public List<Column> getAllColumns() {
+        return columnRepository.findAll();
+    }
+
+    @GetMapping("/{columnId}")
+    public Column getColumn(@PathVariable Long columnId) {
+        return columnRepository.findById(columnId)
+                .orElseThrow(() -> new ResourceNotFoundException("Column not found with id: " + columnId));
+    }
+
+    @PostMapping
+    public Column createColumn(@RequestBody Column column) {
+        return columnRepository.save(column);
+    }
+
+    @PutMapping("/{columnId}")
+    public Column updateColumn(@PathVariable Long columnId, @RequestBody Column updatedColumn) {
+        Column column = columnRepository.findById(columnId)
+                .orElseThrow(() -> new ResourceNotFoundException("Column not found with id: " + columnId));
+        column.setTitle(updatedColumn.getTitle());
+        return columnRepository.save(column);
+    }
+
+    @DeleteMapping("/{columnId}")
+    public void deleteColumn(@PathVariable Long columnId) {
+        Column column = columnRepository.findById(columnId)
+                .orElseThrow(() -> new ResourceNotFoundException("Column not found with id: " + columnId));
+        columnRepository.delete(column);
+    }
+
+    @PostMapping("/{columnId}/cards")
+    public Card createCard(@PathVariable Long columnId, @RequestBody Card card) {
+        Column column = columnRepository.findById(columnId)
+                .orElseThrow(() -> new ResourceNotFoundException("Column not found with id: " + columnId));
+        card.setColumn(column);
+        return cardRepository.save(card);
+    }
+
+    @GetMapping("/{columnId}/cards")
+    public List<Card> getCardsForColumn(@PathVariable Long columnId) {
+        Column column = columnRepository.findById(columnId)
+                .orElseThrow(() -> new ResourceNotFoundException("Column not found with id: " + columnId));
+        return column.getCards();
+    }
+
+    @GetMapping("/cards/{cardId}")
+    public Card getCard(@PathVariable Long cardId) {
+        return cardRepository.findById(cardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + cardId));
+    }
+
+    @PutMapping("/cards/{cardId}")
+    public Card updateCard(@PathVariable Long cardId, @RequestBody Card updatedCard) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + cardId));
+        card.setName(updatedCard.getName());
+        return cardRepository.save(card);
+    }
+
+    @DeleteMapping("/cards/{cardId}")
+    public void deleteCard(@PathVariable Long cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + cardId));
+        cardRepository.delete(card);
+    }
+}
+==================================================================================================================================
+import javax.persistence.*;
+
+@Entity
+public class Card {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String name;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "column_id", nullable = false)
+    private Column column;
+
+    // Constructors, getters, and setters
+
+    // Getter and Setter for column
+    public Column getColumn() {
+        return column;
+    }
+
+    public void setColumn(Column column) {
+        this.column = column;
+    }
+}
+
+------------------------------------------------------------------------
+import javax.persistence.*;
+import java.util.List;
+
+@Entity
+public class Column {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String title;
+
+    @OneToMany(mappedBy = "column", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Card> cards;
+
+    // Constructors, getters, and setters
+
+    // Getter and Setter for cards
+    public List<Card> getCards() {
+        return cards;
+    }
+
+    public void setCards(List<Card> cards) {
+        this.cards = cards;
+    }
+}
+
+---------------------------------------------------------------------------
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface CardRepository extends JpaRepository<Card, Long> {
+}
+------------------------------------------------------------------------------
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public interface ColumnRepository extends JpaRepository<Column, Long> {
+}
+---------------------------------------------------------------------------------
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+@ResponseStatus(HttpStatus.NOT_FOUND)
+public class ResourceNotFoundException extends RuntimeException {
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+}
+--------------------------------------------------------------------------------------
+
+
+Front End in vue js
+====================
+
+Create a new Vue component for the Kanban board (e.g., KanbanBoard.vue):
+<template>
+  <div class="board">
+    <div class="column" v-for="(column, columnIndex) in columns" :key="columnIndex">
+      <h2>{{ column.title }}</h2>
+      <div class="card" v-for="(card, cardIndex) in column.cards" :key="cardIndex" :draggable="true"
+        @dragstart="dragStart(columnIndex, cardIndex)" @dragover="dragOver(columnIndex, cardIndex)"
+        @dragend="dragEnd" @drop="drop(columnIndex, cardIndex)">
+        {{ card.name }}
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { defineComponent } from 'vue';
+import { useKanbanStore } from '@/stores/kanbanStore';
+
+export default defineComponent({
+  name: 'KanbanBoard',
+  setup() {
+    const kanbanStore = useKanbanStore();
+
+    const dragStart = (columnIndex, cardIndex) => {
+      kanbanStore.dragStart(columnIndex, cardIndex);
+    };
+
+    const dragOver = (columnIndex, cardIndex) => {
+      kanbanStore.dragOver(columnIndex, cardIndex);
+    };
+
+    const dragEnd = () => {
+      kanbanStore.dragEnd();
+    };
+
+    const drop = (columnIndex, cardIndex) => {
+      kanbanStore.drop(columnIndex, cardIndex);
+    };
+
+    return {
+      columns: kanbanStore.columns,
+      dragStart,
+      dragOver,
+      dragEnd,
+      drop,
+    };
+  },
+});
+</script>
+
+<style scoped>
+.board {
+  display: flex;
+}
+
+.column {
+  flex: 1;
+  padding: 16px;
+  background-color: #f2f2f2;
+  border-radius: 4px;
+  margin: 8px;
+}
+
+.card {
+  background-color: #fff;
+  padding: 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  cursor: move;
+}
+</style>
+-----------------------------------------------------------------------------------------------------
+Create a Pinia store to manage the Kanban board state (e.g., kanbanStore.js):
+
+import { defineStore } from 'pinia';
+
+export const useKanbanStore = defineStore('kanban', {
+  state: () => ({
+    columns: [],
+    draggedCard: null,
+    draggedCardIndex: null,
+  }),
+
+  actions: {
+    fetchKanbanData() {
+      // Fetch Kanban board data from the backend API and populate the store state
+      // Replace this with your own API endpoint or data retrieval logic
+      // Example:
+      // const response = await axios.get('/kanban');
+      // this.columns = response.data;
+      this.columns = [
+        {
+          id: 1,
+          title: 'To Do',
+          cards: [
+            { id: 1, name: 'Task 1' },
+            { id: 2, name: 'Task 2' },
+            { id: 3, name: 'Task 3' },
+          ],
+        },
+        {
+          id: 2,
+          title: 'In Progress',
+          cards: [
+            { id: 4, name: 'Task 4' },
+            { id: 5, name: 'Task 5' },
+          ],
+        },
+        {
+          id: 3,
+          title: 'Done',
+          cards: [
+            { id: 6, name: 'Task 6' },
+            { id: 7, name: 'Task 7' },
+          ],
+        },
+      ];
+    },
+
+    dragStart(columnIndex, cardIndex) {
+      this.draggedCard = this.columns[columnIndex].cards[cardIndex];
+      this.draggedCardIndex = cardIndex;
+    },
+
+    dragOver(columnIndex, cardIndex) {
+      if (this.draggedCard) {
+        // Move the card to the new position
+        const sourceColumn = this.columns.findIndex((col) => col.cards.includes(this.draggedCard));
+        const cardToMove = this.columns[sourceColumn].cards.splice(this.draggedCardIndex, 1)[0];
+        this.columns[columnIndex].cards.splice(cardIndex, 0, cardToMove);
+        this.draggedCardIndex = cardIndex;
+      }
+    },
+
+    dragEnd() {
+      this.draggedCard = null;
+      this.draggedCardIndex = null;
+    },
+
+    drop(columnIndex, cardIndex) {
+      // Perform any additional logic when a card is dropped
+      // For example, you can make an API request to save the updated board state to the backend
+      // This method is already called from the KanbanBoard component
+      // You can add your own logic here based on your specific requirements
+    },
+  },
+});
+---------------------------------------------------------------------------------------------------------------------------------------------------
+import { createApp } from 'vue';
+import { createPinia } from 'pinia';
+import axios from 'axios';
+import App from './App.vue';
+import router from './router';
+
+const app = createApp(App);
+const pinia = createPinia();
+app.use(pinia);
+app.use(router);
+
+// Set the base URL for axios requests
+axios.defaults.baseURL = 'http://localhost:8080/api';
+
+app.mount('#app');
+
+----------------------------------- add task------------------------------------------------------------------------------------------------------
+
+import { defineStore } from 'pinia';
+
+export const useKanbanStore = defineStore('kanban', {
+  state: () => ({
+    columns: [],
+    draggedCard: null,
+    draggedCardIndex: null,
+  }),
+
+  actions: {
+    fetchKanbanData() {
+      // Fetch Kanban board data from the backend API and populate the store state
+      // Replace this with your own API endpoint or data retrieval logic
+      // Example:
+      // const response = await axios.get('/kanban');
+      // this.columns = response.data;
+      this.columns = [
+        {
+          id: 1,
+          title: 'To Do',
+          cards: [
+            { id: 1, name: 'Task 1' },
+            { id: 2, name: 'Task 2' },
+            { id: 3, name: 'Task 3' },
+          ],
+        },
+        {
+          id: 2,
+          title: 'In Progress',
+          cards: [
+            { id: 4, name: 'Task 4' },
+            { id: 5, name: 'Task 5' },
+          ],
+        },
+        {
+          id: 3,
+          title: 'Done',
+          cards: [
+            { id: 6, name: 'Task 6' },
+            { id: 7, name: 'Task 7' },
+          ],
+        },
+      ];
+    },
+
+    dragStart(columnIndex, cardIndex) {
+      this.draggedCard = this.columns[columnIndex].cards[cardIndex];
+      this.draggedCardIndex = cardIndex;
+    },
+
+    dragOver(columnIndex, cardIndex) {
+      if (this.draggedCard) {
+        // Move the card to the new position
+        const sourceColumn = this.columns.findIndex((col) => col.cards.includes(this.draggedCard));
+        const cardToMove = this.columns[sourceColumn].cards.splice(this.draggedCardIndex, 1)[0];
+        this.columns[columnIndex].cards.splice(cardIndex, 0, cardToMove);
+        this.draggedCardIndex = cardIndex;
+      }
+    },
+
+    dragEnd() {
+      this.draggedCard = null;
+      this.draggedCardIndex = null;
+    },
+
+    drop(columnIndex, cardIndex) {
+      // Perform any additional logic when a card is dropped
+      // For example, you can make an API request to save the updated board state to the backend
+      // This method is already called from the KanbanBoard component
+      // You can add your own logic here based on your specific requirements
+    },
+
+    createTask(columnIndex, taskName) {
+      const newTask = {
+        id: Date.now(),
+        name: taskName,
+      };
+
+      this.columns[columnIndex].cards.push(newTask);
+    },
+  },
+});
+---------------------------------------------------------------------------------------------------
+<template>
+  <div>
+    <h2>{{ column.title }}</h2>
+    <div class="card" v-for="(card, cardIndex) in column.cards" :key="cardIndex">
+      {{ card.name }}
+    </div>
+    <input type="text" v-model="newTaskName" placeholder="Task name" />
+    <button @click="addTask">Add Task</button>
+  </div>
+</template>
+
+<script>
+import { defineComponent, ref } from 'vue';
+import { useKanbanStore } from '@/stores/kanbanStore';
+
+export default defineComponent({
+  name: 'KanbanColumn',
+  props: ['column'],
+  setup(props) {
+    const kanbanStore = useKanbanStore();
+    const newTaskName = ref('');
+
+    const addTask = () => {
+      if (newTaskName.value) {
+        kanbanStore.createTask(props.columnIndex, newTaskName.value);
+        newTaskName.value = '';
+      }
+    };
+
+    return {
+      newTaskName,
+      addTask,
+    };
+  },
+});
+</script>
+
+--------------------------------------------- delete opration------------------------------------------------------------------------------------
+
+import { defineStore } from 'pinia';
+
+export const useKanbanStore = defineStore('kanban', {
+  state: () => ({
+    columns: [],
+    draggedCard: null,
+    draggedCardIndex: null,
+  }),
+
+  actions: {
+    // ...existing actions...
+
+    deleteTask(columnIndex, taskId) {
+      const column = this.columns[columnIndex];
+      const taskIndex = column.cards.findIndex((task) => task.id === taskId);
+
+      if (taskIndex !== -1) {
+        column.cards.splice(taskIndex, 1);
+      }
+    },
+  },
+});
+
+----------------------------------------------------------------------------------------------------
+<template>
+  <div>
+    <h2>{{ column.title }}</h2>
+    <div class="card" v-for="(card, cardIndex) in column.cards" :key="cardIndex">
+      {{ card.name }}
+      <button @click="deleteTask(card.id)">Delete</button>
+    </div>
+    <input type="text" v-model="newTaskName" placeholder="Task name" />
+    <button @click="addTask">Add Task</button>
+  </div>
+</template>
+
+<script>
+import { defineComponent, ref } from 'vue';
+import { useKanbanStore } from '@/stores/kanbanStore';
+
+export default defineComponent({
+  name: 'KanbanColumn',
+  props: ['column'],
+  setup(props) {
+    const kanbanStore = useKanbanStore();
+    const newTaskName = ref('');
+
+    const addTask = () => {
+      if (newTaskName.value) {
+        kanbanStore.createTask(props.columnIndex, newTaskName.value);
+        newTaskName.value = '';
+      }
+    };
+
+    const deleteTask = (taskId) => {
+      kanbanStore.deleteTask(props.columnIndex, taskId);
+    };
+
+    return {
+      newTaskName,
+      addTask,
+      deleteTask,
+    };
+  },
+});
+</script>
+=============================================== update tASK =================================
+import { defineStore } from 'pinia';
+
+export const useKanbanStore = defineStore('kanban', {
+  state: () => ({
+    columns: [],
+    draggedCard: null,
+    draggedCardIndex: null,
+  }),
+
+  actions: {
+    // ...existing actions...
+
+    updateTaskName(columnIndex, taskId, newName) {
+      const column = this.columns[columnIndex];
+      const task = column.cards.find((task) => task.id === taskId);
+
+      if (task) {
+        task.name = newName;
+      }
+    },
+  },
+});
+
+---------------------------------------------------------------------------------------------------------
+<template>
+  <div>
+    <h2>{{ column.title }}</h2>
+    <div class="card" v-for="(card, cardIndex) in column.cards" :key="cardIndex">
+      <input type="text" v-model="card.name" @blur="updateTaskName(card.id, card.name)" />
+      <button @click="deleteTask(card.id)">Delete</button>
+    </div>
+    <input type="text" v-model="newTaskName" placeholder="Task name" />
+    <button @click="addTask">Add Task</button>
+  </div>
+</template>
+
+<script>
+import { defineComponent, ref } from 'vue';
+import { useKanbanStore } from '@/stores/kanbanStore';
+
+export default defineComponent({
+  name: 'KanbanColumn',
+  props: ['column'],
+  setup(props) {
+    const kanbanStore = useKanbanStore();
+    const newTaskName = ref('');
+
+    const addTask = () => {
+      if (newTaskName.value) {
+        kanbanStore.createTask(props.columnIndex, newTaskName.value);
+        newTaskName.value = '';
+      }
+    };
+
+    const deleteTask = (taskId) => {
+      kanbanStore.deleteTask(props.columnIndex, taskId);
+    };
+
+    const updateTaskName = (taskId, newName) => {
+      kanbanStore.updateTaskName(props.columnIndex, taskId, newName);
+    };
+
+    return {
+      newTaskName,
+      addTask,
+      deleteTask,
+      updateTaskName,
+    };
+  },
+});
+</script>
+--------------------------------------------------------- USE API FOR add,UPDATE,delete --------------------------------------------------
+==>Here's an example db.json file that you can use as a starting point for your Kanban board application:
+{
+  "columns": [
+    {
+      "id": 1,
+      "title": "To Do",
+      "cards": [
+        { "id": 1, "name": "Task 1" },
+        { "id": 2, "name": "Task 2" },
+        { "id": 3, "name": "Task 3" }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "In Progress",
+      "cards": [
+        { "id": 4, "name": "Task 4" },
+        { "id": 5, "name": "Task 5" }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Done",
+      "cards": [
+        { "id": 6, "name": "Task 6" },
+        { "id": 7, "name": "Task 7" }
+      ]
+    }
+  ]
+}
+---------------------------------------------------------------------------------------------------
+import { defineStore } from 'pinia';
+import axios from 'axios';
+
+export const useKanbanStore = defineStore('kanban', {
+  state: () => ({
+    columns: [],
+    draggedCard: null,
+    draggedCardIndex: null,
+  }),
+
+  actions: {
+    async fetchColumns() {
+      try {
+        const response = await axios.get('http://localhost:3000/columns');
+        this.columns = response.data;
+      } catch (error) {
+        console.error('Error fetching columns:', error);
+      }
+    },
+
+    async createTask(columnIndex, taskName) {
+      try {
+        const column = this.columns[columnIndex];
+        const response = await axios.post('http://localhost:3000/cards', {
+          name: taskName,
+          columnId: column.id,
+        });
+        column.cards.push(response.data);
+      } catch (error) {
+        console.error('Error creating task:', error);
+      }
+    },
+
+    async updateTaskName(columnIndex, taskId, newName) {
+      try {
+        const column = this.columns[columnIndex];
+        const taskIndex = column.cards.findIndex((task) => task.id === taskId);
+
+        if (taskIndex !== -1) {
+          column.cards[taskIndex].name = newName;
+          await axios.put(`http://localhost:3000/cards/${taskId}`, {
+            name: newName,
+          });
+        }
+      } catch (error) {
+        console.error('Error updating task:', error);
+      }
+    },
+
+    async deleteTask(columnIndex, taskId) {
+      try {
+        const column = this.columns[columnIndex];
+        const taskIndex = column.cards.findIndex((task) => task.id === taskId);
+
+        if (taskIndex !== -1) {
+          column.cards.splice(taskIndex, 1);
+          await axios.delete(`http://localhost:3000/cards/${taskId}`);
+        }
+      } catch (error) {
+        console.error('Error deleting task:', error);
+      }
+    },
+  },
+});
+-------------------------------------------------------------------------------------------------------------
+json-server --watch db.json --port 3000
+npm install axios
