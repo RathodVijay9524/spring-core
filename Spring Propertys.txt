@@ -1,0 +1,13 @@
+server.port=9090
+spring.datasource.url=jdbc:mysql://localhost:3306/user
+spring.datasource.username=root
+spring.datasource.password=root
+
+spring.jpa.properties.hibernate.dilect=org.hibernate.dialect.MySQL8Dialect
+spring.jpa.hibernate.ddl-auto=update
+
+# MongoDB Configuration
+
+spring.data.mongodb.host=localhost
+spring.data.mongodb.port=27017
+spring.data.mongodb.database=BookStore

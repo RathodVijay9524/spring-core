@@ -1,0 +1,198 @@
+vue create vue-pinia-crud-json-server
+
+npm install pinia axios
+
+Step 3: Set up JSON Server
+Create a file named db.json in the root of your project and define an empty array for items:
+
+{
+  "items": []
+}
+
+npx json-server --watch db.json
+
+
+store.js
+import { createPinia } from 'pinia';
+import axios from 'axios';
+
+export const pinia = createPinia();
+
+export const useStore = pinia.createStore({
+  state: () => ({
+    items: []
+  }),
+  actions: {
+    async fetchItems() {
+      try {
+        const response = await axios.get('/items');
+        this.items = response.data;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    async addItem(item) {
+      try {
+        const response = await axios.post('/items', item);
+        this.items.push(response.data);
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    async updateItem(item) {
+      try {
+        await axios.put(`/items/${item.id}`, item);
+        const index = this.items.findIndex((i) => i.id === item.id);
+        if (index !== -1) {
+          this.items[index] = item;
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    async deleteItem(itemId) {
+      try {
+        await axios.delete(`/items/${itemId}`);
+        const index = this.items.findIndex((item) => item.id === itemId);
+        if (index !== -1) {
+          this.items.splice(index, 1);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    }
+  }
+});
+
+----------------------------------------------------------------------
+<template>
+  <div>
+    <h1>CRUD Application</h1>
+    <item-form />
+    <item-list />
+  </div>
+</template>
+
+<script>
+import { useStore } from './store';
+import ItemForm from './components/ItemForm.vue';
+import ItemList from './components/ItemList.vue';
+
+export default {
+  components: {
+    ItemForm,
+    ItemList
+  },
+  mounted() {
+    const store = useStore();
+    store.fetchItems();
+  }
+};
+</script>
+
+---------------------------------------------------------------------
+<template>
+  <div>
+    <form @submit.prevent="submitForm">
+      <label for="name">Name:</label>
+      <input type="text" id="name" v-model="form.name" required>
+      <button type="submit">{{ mode }}</button>
+      <button type="button" @click="clearForm">Clear</button>
+    </form>
+  </div>
+</template>
+
+<script>
+import { useStore } from '../store';
+
+export default {
+  setup() {
+    const store = useStore();
+
+    const form = {
+      id: null,
+      name: ''
+    };
+
+    const mode = computed(() => (form.id ? 'Update' : 'Create'));
+
+    const submitForm = () => {
+      if (form.id) {
+        store.updateItem(form);
+      } else {
+        store.addItem(form);
+      }
+      clearForm();
+    };
+
+    const clearForm = () => {
+      form.id = null;
+      form.name = '';
+    };
+
+    return {
+      form,
+      mode,
+      submitForm,
+      clearForm
+    };
+  }
+};
+</script>
+---------------------------------------------------------------------
+<template>
+  <div>
+    <h2>Items</h2>
+    <ul>
+      <li v-for="item in items" :key="item.id">
+        {{ item.name }}
+        <button @click="editItem(item)">Edit</button>
+        <button @click="deleteItem(item.id)">Delete</button>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script>
+import { useStore } from '../store';
+
+export default {
+  setup() {
+    const store = useStore();
+    const items = computed(() => store.items);
+
+    const editItem = (item) => {
+      form.id = item.id;
+      form.name = item.name;
+    };
+
+    const deleteItem = (itemId) => {
+      store.deleteItem(itemId);
+    };
+
+    return {
+      items,
+      editItem,
+      deleteItem
+    };
+  }
+};
+</script>
+
+-------------------------------------------------------------------------------
+import Vue from 'vue';
+import App from './App.vue';
+import { pinia } from './store';
+
+Vue.config.productionTip = false;
+
+new Vue({
+  pinia,
+  render: h => h(App)
+}).$mount('#app');
+
+--------------------------------------------------------------------------
+npm run serve
+
+
+
