@@ -1,3 +1,53 @@
+<div class="card" v-for="(card, cardIndex) in column.cards" :key="card.id" :draggable="true"
+  @dragstart="dragStart(columnIndex, cardIndex)" @dragover="dragOver(columnIndex, cardIndex)"
+  @dragend="dragEnd" @drop="drop(columnIndex, cardIndex)">
+  <div v-if="!editMode.cardIndex || editMode.cardIndex !== cardIndex">
+    {{ card.name }}
+    <button @click="startEditing(columnIndex, cardIndex)">Edit</button>
+    <button @click="deleteCard(columnIndex, cardIndex)">Delete</button>
+  </div>
+  <div v-else>
+    <input type="text" v-model="editMode.cardName">
+    <button @click="saveChanges()">Save</button>
+    <button @click="cancelEditing()">Cancel</button>
+  </div>
+</div>
+
+
+  startEditing(columnIndex, cardIndex) {
+    this.editMode.columnIndex = columnIndex;
+    this.editMode.cardIndex = cardIndex;
+    this.editMode.cardName = this.columns[columnIndex].cards[cardIndex].name;
+  },
+
+  saveChanges() {
+    const { columnIndex, cardIndex, cardName } = this.editMode;
+    this.columns[columnIndex].cards[cardIndex].name = cardName;
+    this.editMode.columnIndex = null;
+    this.editMode.cardIndex = null;
+    this.editMode.cardName = '';
+  },
+
+  cancelEditing() {
+    this.editMode.columnIndex = null;
+    this.editMode.cardIndex = null;
+    this.editMode.cardName = '';
+  },
+
+  deleteCard(columnIndex, cardIndex) {
+    this.columns[columnIndex].cards.splice(cardIndex, 1);
+  },
+
+  // ...
+},
+
+
+
+
+
+
+
+----------------------------------------------------
 <template>
   <main>
     <div class="search-bar">
