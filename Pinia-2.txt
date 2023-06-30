@@ -1,0 +1,1148 @@
+<template>
+  <main>
+    <div>
+      <input type="text" v-model="searchQuery" placeholder="Search tasks" />
+    </div>
+    <div class="kanban-board">
+      <br />
+      <div v-for="(column, columnIndex) in filteredColumns" :key="columnIndex" class="kanban-column">
+        <h3>{{ column.title }}</h3>
+        <draggable v-model="column.tasks" class="task-list" group="kanban" @end="handleTaskDrop">
+          <div v-for="task in column.tasks" :key="task.id" class="task">
+            {{ task.name }}
+            <button @click="deleteTask(columnIndex, task.id)">Delete</button>
+          </div>
+        </draggable>
+        <input type="text" v-model="newTaskName" placeholder="New Task Name" />
+        <button @click="insertTask(columnIndex)">Add Task</button>
+      </div>
+    </div>
+  </main>
+</template>
+
+<script>
+import draggable from "vuedraggable";
+import axios from "axios";
+
+export default {
+  name: "KanbanBoard",
+  components: {
+    draggable
+  },
+  data() {
+    return {
+      columns: [],
+      newTaskName: "",
+      searchQuery: ""
+    };
+  },
+  mounted() {
+    this.fetchData();
+  },
+  methods: {
+    async fetchData() {
+      try {
+        const response = await axios.get("http://localhost:3000/columns");
+        this.columns = response.data;
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    async insertTask(columnIndex) {
+      try {
+        const column = this.columns[columnIndex];
+        const newTask = {
+          name: this.newTaskName
+        };
+        const response = await axios.post(
+          `http://localhost:3000/columns/${column.id}/tasks`,
+          newTask
+        );
+        column.tasks.push(response.data);
+        this.newTaskName = "";
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    async deleteTask(columnIndex, taskId) {
+      try {
+        const column = this.columns[columnIndex];
+        await axios.delete(`http://localhost:3000/columns/${column.id}/tasks/${taskId}`);
+        column.tasks = column.tasks.filter(task => task.id !== taskId);
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    handleTaskDrop(event) {
+      const droppedTask = event.item;
+      const fromColumnIndex = event.from.parentElement.dataset.columnIndex;
+      const toColumnIndex = event.to.parentElement.dataset.columnIndex;
+      console.log(
+        `Task "${droppedTask.name}" dropped from column ${fromColumnIndex} to column ${toColumnIndex}`
+      );
+    }
+  },
+  computed: {
+    filteredColumns() {
+      const searchQuery = this.searchQuery.toLowerCase();
+      return this.columns.map(column => ({
+        ...column,
+        tasks: column.tasks.filter(task =>
+          task.name.toLowerCase().includes(searchQuery)
+        )
+      }));
+    }
+  }
+};
+</script>
+
+==============================================================================================================
+<template>
+  <main>
+
+    <div> <input type="text" v-model="searchQuery" placeholder="Search tasks" /></div>
+    <div class="kanban-board">
+    
+   <br />
+    <div v-for="(column, columnIndex) in columns" :key="columnIndex" class="kanban-column">
+      <h3>{{ column.title }}</h3>
+      <draggable v-model="filteredTasks[columnIndex]" class="task-list" group="kanban" @end="handleTaskDrop">
+        <div v-for="task in filteredTasks[columnIndex]" :key="task.id" class="task">
+          {{ task.name }}
+          <button @click="deleteTask(columnIndex, task.id)">Delete</button>
+        </div>
+      </draggable>
+      <input type="text" v-model="newTaskName" placeholder="New Task Name" />
+      <button @click="insertTask(columnIndex)">Add Task</button>
+    </div>
+  </div>
+  </main>
+
+</template>
+
+<script>
+import draggable from "vuedraggable";
+
+export default {
+  name: "KanbanBoard",
+  components: {
+    draggable
+  },
+  data() {
+    return {
+      columns: [
+        {
+          title: "Backlog",
+          tasks: [
+            { id: 1, name: "Task 1" },
+            { id: 2, name: "Task 2" },
+            { id: 3, name: "Task 3" }
+          ]
+        },
+        {
+          title: "In Progress",
+          tasks: [
+            { id: 4, name: "Task 4" },
+            { id: 5, name: "Task 5" }
+          ]
+        },
+        {
+          title: "Done",
+          tasks: [
+            { id: 6, name: "Task 6" },
+            { id: 7, name: "Task 7" },
+            { id: 8, name: "Task 8" }
+          ]
+        }
+      ],
+      newTaskName: "",
+      searchQuery: "",
+      filteredTasks: []
+    };
+  },
+  mounted() {
+    // Initialize filteredTasks with all tasks initially
+    this.filteredTasks = this.columns.map(column => column.tasks);
+  },
+  watch: {
+    searchQuery() {
+      this.filterTasks();
+    }
+  },
+  methods: {
+    handleTaskDrop(event) {
+      const droppedTask = event.item;
+      const fromColumnIndex = event.from.parentElement.dataset.columnIndex;
+      const toColumnIndex = event.to.parentElement.dataset.columnIndex;
+      console.log(`Task "${droppedTask.name}" dropped from column ${fromColumnIndex} to column ${toColumnIndex}`);
+    },
+    insertTask(columnIndex) {
+      const column = this.columns[columnIndex];
+      const newTask = {
+        id: Date.now(),
+        name: this.newTaskName
+      };
+      column.tasks.push(newTask);
+      this.newTaskName = "";
+      this.filterTasks();
+    },
+    deleteTask(columnIndex, taskId) {
+      const column = this.columns[columnIndex];
+      column.tasks = column.tasks.filter(task => task.id !== taskId);
+      this.filterTasks();
+    },
+    filterTasks() {
+      const searchQuery = this.searchQuery.toLowerCase();
+      this.filteredTasks = this.columns.map(column =>
+        column.tasks.filter(task => task.name.toLowerCase().includes(searchQuery))
+      );
+    }
+  }
+};
+</script>
+
+
+
+<style>
+.kanban-board {
+  display: flex;
+}
+
+.kanban-column {
+  flex: 1;
+  margin: 10px;
+  padding: 10px;
+  background-color: #f2f2f2;
+}
+
+.task-list {
+  min-height: 200px;
+  background-color: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.task {
+  margin: 5px 0;
+  padding: 5px;
+  background-color: #f9f9f9;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+</style>
+================================================================================================================
+<template>
+    <div>
+      <div class="controls">
+        <input type="text" v-model="newTask" placeholder="Enter task name">
+        <button @click="addTask">Add Task</button>
+        <input type="text" v-model="searchText" placeholder="Search task">
+      </div>
+      <div class="kanban-board">
+        <div v-for="(column, columnIndex) in columns" :key="columnIndex" class="kanban-column">
+          <h3>{{ column.title }}</h3>
+          <draggable v-model="column.tasks" class="task-list" group="kanban" @end="handleTaskDrop">
+            <div v-for="(task, taskIndex) in filteredTasks(column.tasks)" :key="task.id" class="task">
+              <span>{{ task.name }}</span>
+              <button @click="editTask(columnIndex, taskIndex)">Edit</button>
+              <button @click="deleteTask(columnIndex, taskIndex)">Delete</button>
+            </div>
+          </draggable>
+        </div>
+      </div>
+      <div v-if="selectedTask !== null" class="edit-task">
+        <input type="text" v-model="selectedTask.editedName" placeholder="Enter task name">
+        <button @click="updateTask">Save</button>
+      </div>
+    </div>
+  </template>
+  
+  <script>
+  import draggable from "vuedraggable";
+  
+  export default {
+    name: "KanbanBoard",
+    components: {
+      draggable,
+    },
+    data() {
+      return {
+        newTask: "",
+        searchText: "",
+        columns: [
+          { title: "Backlog", tasks: [] },
+          { title: "In Progress", tasks: [] },
+          { title: "Testing", tasks: [] },
+          { title: "Done", tasks: [] },
+        ],
+        selectedTask: null,
+      };
+    },
+    methods: {
+      addTask() {
+        if (this.newTask) {
+          this.columns[0].tasks.push({ id: Date.now(), name: this.newTask });
+          this.newTask = "";
+        }
+      },
+      editTask(columnIndex, taskIndex) {
+        const task = this.columns[columnIndex].tasks[taskIndex];
+        this.selectedTask = {
+          columnIndex,
+          taskIndex,
+          originalName: task.name,
+          editedName: task.name,
+        };
+      },
+      updateTask() {
+        if (this.selectedTask !== null) {
+          const { columnIndex, taskIndex, editedName } = this.selectedTask;
+          this.columns[columnIndex].tasks[taskIndex].name = editedName;
+          this.selectedTask = null;
+        }
+      },
+      deleteTask(columnIndex, taskIndex) {
+        this.columns[columnIndex].tasks.splice(taskIndex, 1);
+      },
+      filteredTasks(tasks) {
+        if (!this.searchText) {
+          return tasks;
+        }
+        const searchTerm = this.searchText.toLowerCase();
+        return tasks.filter((task) => task.name.toLowerCase().includes(searchTerm));
+      },
+      handleTaskDrop() {
+        console.log("Task dropped");
+      },
+    },
+  };
+  </script>
+  
+  <style>
+  .kanban-board {
+    display: flex;
+  }
+  
+  .kanban-column {
+    flex: 1;
+    margin: 0 10px;
+  }
+  
+  .controls {
+    margin-bottom: 10px;
+  }
+  
+  .task {
+    display: flex;
+    align-items: center;
+    padding: 5px;
+    margin-bottom: 5px;
+    background-color: #f1f1f1;
+  }
+  
+  .task-list {
+    min-height: 100px;
+    padding: 10px;
+    background-color: #f9f9f9;
+  }
+  </style>
+  
+=============================================================================================================
+<template>
+    <div class="kanban-board">
+      <div v-for="(column, columnIndex) in columns" :key="columnIndex" class="kanban-column">
+        <h3>{{ column.title }}</h3>
+        <draggable v-model="column.tasks" class="task-list" group="kanban" @end="handleTaskDrop">
+          <div v-for="task in column.tasks" :key="task.id" class="task">
+            {{ task.name }}
+          </div>
+        </draggable>
+      </div>
+    </div>
+  </template>
+  
+  
+  <script>
+  import draggable from "vuedraggable";
+  
+  export default {
+    name: "KanbanBoard",
+    components: {
+      draggable
+    },
+    data() {
+      return {
+        columns: [
+          {
+            title: "Backlog",
+            tasks: [
+              { id: 1, name: "Task 1" },
+              { id: 2, name: "Task 2" },
+              { id: 3, name: "Task 3" }
+            ]
+          },
+          {
+            title: "In Progress",
+            tasks: [
+              { id: 4, name: "Task 4" },
+              { id: 5, name: "Task 5" }
+            ]
+          },
+          {
+            title: "Done",
+            tasks: [
+              { id: 6, name: "Task 6" },
+              { id: 7, name: "Task 7" },
+              { id: 8, name: "Task 8" }
+            ]
+          }
+        ]
+      };
+    },
+    methods: {
+      handleTaskDrop(event) {
+        const droppedTask = event.item;
+        const fromColumnIndex = event.from.parentElement.dataset.columnIndex;
+        const toColumnIndex = event.to.parentElement.dataset.columnIndex;
+        console.log(`Task "${droppedTask.name}" dropped from column ${fromColumnIndex} to column ${toColumnIndex}`);
+      }
+    }
+  };
+  </script>
+  
+  <style>
+  .kanban-board {
+    display: flex;
+  }
+  
+  .kanban-column {
+    flex: 1;
+    margin: 10px;
+    padding: 10px;
+    background-color: #f2f2f2;
+  }
+  
+  .task-list {
+    min-height: 200px;
+    background-color: white;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  
+  .task {
+    margin: 5px 0;
+    padding: 5px;
+    background-color: #f9f9f9;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  </style>
+  
+=======================================================================
+public class Board {
+    private String newTask;
+    private List<Task> arrBackLog;
+    private List<Task> arrInProgress;
+    private List<Task> arrTested;
+    private List<Task> arrDone;
+    private Task selectedTask;
+    private String searchText;
+
+    // Constructors, getters, and setters
+    // ...
+}
+
+public class Task {
+    private int id;
+    private String name;
+
+    // Constructors, getters, and setters
+    // ...
+}
+===============================================================================
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/board")
+public class BoardController {
+
+    private Board board;
+
+    public BoardController() {
+        board = new Board();
+        // Initialize the board and its tasks here if needed
+    }
+
+    @GetMapping
+    public Board getBoard() {
+        return board;
+    }
+
+    @PostMapping("/tasks")
+    public void addTask(@RequestBody String taskName) {
+        Task newTask = new Task();
+        newTask.setId(generateTaskId());
+        newTask.setName(taskName);
+        board.getArrBackLog().add(newTask);
+    }
+
+    @PutMapping("/tasks/{taskId}")
+    public void editTask(@PathVariable int taskId, @RequestBody Task updatedTask) {
+        Task taskToEdit = findTaskById(taskId);
+        if (taskToEdit != null) {
+            taskToEdit.setName(updatedTask.getName());
+        }
+    }
+
+    @DeleteMapping("/tasks/{taskId}")
+    public void deleteTask(@PathVariable int taskId) {
+        Task taskToDelete = findTaskById(taskId);
+        if (taskToDelete != null) {
+            List<Task> taskList = findTaskListByTaskId(taskId);
+            if (taskList != null) {
+                taskList.remove(taskToDelete);
+            }
+        }
+    }
+
+   // Helper methods
+private int generateTaskId() {
+    // Generate a unique task ID
+    int maxId = 0;
+    for (Task task : board.getArrBackLog()) {
+        maxId = Math.max(maxId, task.getId());
+    }
+    for (Task task : board.getArrInProgress()) {
+        maxId = Math.max(maxId, task.getId());
+    }
+    for (Task task : board.getArrTested()) {
+        maxId = Math.max(maxId, task.getId());
+    }
+    for (Task task : board.getArrDone()) {
+        maxId = Math.max(maxId, task.getId());
+    }
+    return maxId + 1;
+}
+
+private Task findTaskById(int taskId) {
+    // Find and return the task by ID
+    for (Task task : board.getArrBackLog()) {
+        if (task.getId() == taskId) {
+            return task;
+        }
+    }
+    for (Task task : board.getArrInProgress()) {
+        if (task.getId() == taskId) {
+            return task;
+        }
+    }
+    for (Task task : board.getArrTested()) {
+        if (task.getId() == taskId) {
+            return task;
+        }
+    }
+    for (Task task : board.getArrDone()) {
+        if (task.getId() == taskId) {
+            return task;
+        }
+    }
+    return null; // Task not found
+}
+
+private List<Task> findTaskListByTaskId(int taskId) {
+    // Find and return the task list that contains the task with the given ID
+    for (Task task : board.getArrBackLog()) {
+        if (task.getId() == taskId) {
+            return board.getArrBackLog();
+        }
+    }
+    for (Task task : board.getArrInProgress()) {
+        if (task.getId() == taskId) {
+            return board.getArrInProgress();
+        }
+    }
+    for (Task task : board.getArrTested()) {
+        if (task.getId() == taskId) {
+            return board.getArrTested();
+        }
+    }
+    for (Task task : board.getArrDone()) {
+        if (task.getId() == taskId) {
+            return board.getArrDone();
+        }
+    }
+    return null; // Task not found in any list
+}
+
+}=========================================================================
+import { defineStore } from 'pinia';
+
+export const useBoardStore = defineStore('board', {
+  state() {
+    return {
+      board: null,
+    };
+  },
+  actions: {
+    initializeBoard() {
+      this.board = {
+        arrBackLog: [
+          { id: 1, name: 'Code Sign Up Page' },
+          { id: 2, name: 'Test Dashboard' },
+          { id: 3, name: 'Style Registration' },
+          { id: 4, name: 'Help with Designs' },
+        ],
+        arrInProgress: [],
+        arrTested: [],
+        arrDone: [],
+      };
+    },
+    addTask(taskName) {
+      const newTask = {
+        id: this.generateTaskId(),
+        name: taskName,
+      };
+      this.board.arrBackLog.push(newTask);
+    },
+    editTask(taskId, updatedTask) {
+      const taskToEdit = this.findTaskById(taskId);
+      if (taskToEdit) {
+        taskToEdit.name = updatedTask.name;
+      }
+    },
+    deleteTask(taskId) {
+      const taskToDelete = this.findTaskById(taskId);
+      if (taskToDelete) {
+        const taskList = this.findTaskListByTaskId(taskId);
+        if (taskList) {
+          const index = taskList.findIndex(task => task.id === taskId);
+          if (index !== -1) {
+            taskList.splice(index, 1);
+          }
+        }
+      }
+    },
+    generateTaskId() {
+      let maxId = 0;
+      for (const task of this.board.arrBackLog) {
+        maxId = Math.max(maxId, task.id);
+      }
+      for (const task of this.board.arrInProgress) {
+        maxId = Math.max(maxId, task.id);
+      }
+      for (const task of this.board.arrTested) {
+        maxId = Math.max(maxId, task.id);
+      }
+      for (const task of this.board.arrDone) {
+        maxId = Math.max(maxId, task.id);
+      }
+      return maxId + 1;
+    },
+    findTaskById(taskId) {
+      for (const task of this.board.arrBackLog) {
+        if (task.id === taskId) {
+          return task;
+        }
+      }
+      for (const task of this.board.arrInProgress) {
+        if (task.id === taskId) {
+          return task;
+        }
+      }
+      for (const task of this.board.arrTested) {
+        if (task.id === taskId) {
+          return task;
+        }
+      }
+      for (const task of this.board.arrDone) {
+        if (task.id === taskId) {
+          return task;
+        }
+      }
+      return null;
+    },
+    findTaskListByTaskId(taskId) {
+      for (const task of this.board.arrBackLog) {
+        if (task.id === taskId) {
+          return this.board.arrBackLog;
+        }
+      }
+      for (const task of this.board.arrInProgress) {
+        if (task.id === taskId) {
+          return this.board.arrInProgress;
+        }
+      }
+      for (const task of this.board.arrTested) {
+        if (task.id === taskId) {
+          return this.board.arrTested;
+        }
+      }
+      for (const task of this.board.arrDone) {
+        if (task.id === taskId) {
+          return this.board.arrDone;
+        }
+      }
+      return null;
+    },
+  },
+});
+
+====================================================================
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+@SpringBootApplication
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/**")
+                        .allowedOrigins("http://localhost:8080")
+                        .allowedMethods("GET", "POST", "PUT", "DELETE")
+                        .allowedHeaders("*");
+            }
+        };
+    }
+}
+
+
+
+=============================================================================
+import { defineStore } from 'pinia';
+
+export const useBoardStore = defineStore('board', {
+  state() {
+    return {
+      newTask: '',
+      arrBackLog: [
+        { id: 1, name: 'Code Sign Up Page' },
+        { id: 2, name: 'Test Dashboard' },
+        { id: 3, name: 'Style Registration' },
+        { id: 4, name: 'Help with Designs' },
+      ],
+      arrInProgress: [],
+      arrTested: [],
+      arrDone: [],
+      selectedTask: null,
+      searchText: '',
+    };
+  },
+  actions: {
+    addTask(taskName) {
+      this.arrBackLog.push({ id: Date.now(), name: taskName });
+    },
+    editTask(task) {
+      this.selectedTask = task;
+    },
+    updateTask() {
+      this.selectedTask = null;
+    },
+    deleteTask(taskArray, task) {
+      const index = taskArray.findIndex(item => item.id === task.id);
+      if (index !== -1) {
+        taskArray.splice(index, 1);
+      }
+    },
+  },
+  getters: {
+    filteredBacklog() {
+      if (!this.searchText) {
+        return this.arrBackLog;
+      }
+      const searchTerm = this.searchText.toLowerCase();
+      return this.arrBackLog.filter(task =>
+        task.name.toLowerCase().includes(searchTerm)
+      );
+    },
+  },
+});
+
+========================================================================================================================
+<template>
+    <div class="container mt-5">
+      <div class="row">
+        <div class="col form-inline">
+          <b-form-input
+            id="input-2"
+            v-model="newTask"
+            required
+            placeholder="Enter Task"
+            @keyup.enter="add"
+          ></b-form-input>
+          <b-button @click="add" variant="primary" class="ml-3">Add</b-button>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          <b-form-input
+            id="input-3"
+            v-model="searchText"
+            placeholder="Search Task"
+          ></b-form-input>
+        </div>
+      </div>
+      <div class="row mt-5">
+        <div class="col-3">
+          <div class="p-2 alert alert-secondary">
+            <h3>Back Log</h3>
+            <draggable
+              class="list-group kanban-column"
+              :list="filteredBacklog"
+              group="tasks"
+            >
+              <div
+                class="list-group-item"
+                v-for="element in filteredBacklog"
+                :key="element.id"
+              >
+                <div v-if="selectedTask !== element">
+                  {{ element.name }}
+                  <div class="float-right">
+                    <b-button size="sm" @click="editTask(element)">+</b-button>&nbsp;&nbsp;&nbsp;
+                    <b-button size="sm" @click="deleteTask(arrBackLog, element)">X</b-button>
+                  </div>
+                </div>
+                <div v-else>
+                  <b-form-input v-model="element.name" @keyup.enter="updateTask" />
+                  <b-button size="sm" @click="updateTask">Update</b-button>
+                </div>
+              </div>
+            </draggable>
+          </div>
+        </div>
+  
+        <div class="col-3">
+          <div class="p-2 alert alert-primary">
+            <h3>In Progress</h3>
+            <draggable
+              class="list-group kanban-column"
+              :list="arrInProgress"
+              group="tasks"
+            >
+              <div
+                class="list-group-item"
+                v-for="element in arrInProgress"
+                :key="element.id"
+              >
+                {{ element.name }}
+                <div class="float-right">
+                  <b-button size="sm" @click="deleteTask(arrInProgress, element)">Delete</b-button>
+                </div>
+              </div>
+            </draggable>
+          </div>
+        </div>
+  
+        <div class="col-3">
+          <div class="p-2 alert alert-warning">
+            <h3>Testing</h3>
+            <draggable
+              class="list-group kanban-column"
+              :list="arrTested"
+              group="tasks"
+            >
+              <div
+                class="list-group-item"
+                v-for="element in arrTested"
+                :key="element.id"
+              >
+                {{ element.name }}
+                <div class="float-right">
+                  <b-button size="sm" @click="deleteTask(arrTested, element)">Delete</b-button>
+                </div>
+              </div>
+            </draggable>
+          </div>
+        </div>
+  
+        <div class="col-3">
+          <div class="p-2 alert alert-success">
+            <h3>Done</h3>
+            <draggable
+              class="
+              list-group kanban-column"
+            :list="arrDone"
+            group="tasks"
+          >
+            <div
+              class="list-group-item"
+              v-for="element in arrDone"
+              :key="element.id"
+            >
+              {{ element.name }}
+              <div class="float-right">
+                <b-button size="sm" @click="deleteTask(arrDone, element)">Delete</b-button>
+              </div>
+            </div>
+          </draggable>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { defineComponent } from 'vue';
+import draggable from 'vuedraggable';
+import { useBoardStore } from './store';
+
+export default defineComponent({
+  // eslint-disable-next-line vue/multi-word-component-names
+  name: 'Board',
+  components: {
+    draggable
+  },
+  setup() {
+    const store = useBoardStore();
+
+    const add = () => {
+      if (store.newTask) {
+        store.addTask(store.newTask);
+        store.newTask = '';
+      }
+    };
+
+    const editTask = (task) => {
+      store.editTask(task);
+    };
+
+    const updateTask = () => {
+      store.updateTask();
+    };
+
+    const deleteTask = (taskArray, task) => {
+      store.deleteTask(taskArray, task);
+    };
+
+    const filteredBacklog = () => {
+      if (!store.searchText) {
+        return store.arrBackLog;
+      }
+      const searchTerm = store.searchText.toLowerCase();
+      return store.arrBackLog.filter(task =>
+        task.name.toLowerCase().includes(searchTerm)
+      );
+    };
+
+    return {
+      newTask: store.newTask,
+      arrBackLog: store.arrBackLog,
+      arrInProgress: store.arrInProgress,
+      arrTested: store.arrTested,
+      arrDone: store.arrDone,
+      selectedTask: store.selectedTask,
+      searchText: store.searchText,
+      add,
+      editTask,
+      updateTask,
+      deleteTask,
+      filteredBacklog
+    };
+  }
+});
+</script>
+
+<style>
+/* light stylings for the kanban columns */
+.kanban-column {
+  min-height: 300px;
+}
+</style>
+  
+
+
+========================================================================================================
+<template>
+    <div class="container mt-5">
+      <div class="row">
+        <div class="col form-inline">
+          <b-form-input
+            id="input-2"
+            v-model="newTask"
+            required
+            placeholder="Enter Task"
+            @keyup.enter="add"
+          ></b-form-input>
+          <b-button @click="add" variant="primary" class="ml-3">Add</b-button>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+          <b-form-input
+            id="input-3"
+            v-model="searchText"
+            placeholder="Search Task"
+          ></b-form-input>
+        </div>
+      </div>
+      <div class="row mt-5">
+        <div class="col-3">
+          <div class="p-2 alert alert-secondary">
+            <h3>Back Log</h3>
+            <draggable
+              class="list-group kanban-column"
+              :list="filteredBacklog"
+              group="tasks"
+            >
+              <div
+                class="list-group-item"
+                v-for="element in filteredBacklog"
+                :key="element.id"
+              >
+                <div v-if="selectedTask !== element">
+                  {{ element.name }}
+                  <div class="float-right">
+                    <b-button size="sm" @click="editTask(element)">+</b-button>&nbsp;&nbsp;&nbsp;
+                    <b-button size="sm" @click="deleteTask(arrBackLog, element)">X</b-button>
+                  </div>
+                </div>
+                <div v-else>
+                  <b-form-input v-model="element.name" @keyup.enter="updateTask" />
+                  <b-button size="sm" @click="updateTask">Update</b-button>
+                </div>
+              </div>
+            </draggable>
+          </div>
+        </div>
+  
+        <div class="col-3">
+          <div class="p-2 alert alert-primary">
+            <h3>In Progress</h3>
+            <draggable
+              class="list-group kanban-column"
+              :list="arrInProgress"
+              group="tasks"
+            >
+              <div
+                class="list-group-item"
+                v-for="element in arrInProgress"
+                :key="element.id"
+              >
+                {{ element.name }}
+                <div class="float-right">
+                  <b-button size="sm" @click="deleteTask(arrInProgress, element)">Delete</b-button>
+                </div>
+              </div>
+            </draggable>
+          </div>
+        </div>
+  
+        <div class="col-3">
+          <div class="p-2 alert alert-warning">
+            <h3>Testing</h3>
+            <draggable
+              class="list-group kanban-column"
+              :list="arrTested"
+              group="tasks"
+            >
+              <div
+                class="list-group-item"
+                v-for="element in arrTested"
+                :key="element.id"
+              >
+                {{ element.name }}
+                <div class="float-right">
+                  <b-button size="sm" @click="deleteTask(arrTested, element)">Delete</b-button>
+                </div>
+              </div>
+            </draggable>
+          </div>
+        </div>
+  
+        <div class="col-3">
+          <div class="p-2 alert alert-success">
+            <h3>Done</h3>
+            <draggable
+              class="list-group kanban-column"
+              :list="arrDone"
+              group="tasks"
+            >
+            <div
+                class="list-group-item"
+                v-for="element in arrDone"
+                :key="element.id"
+              >
+              {{ element.name }}
+              <div class="float-right">
+                <b-button size="sm" @click="deleteTask(arrDone, element)">Delete</b-button>
+              </div>
+            </div>
+          </draggable>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import draggable from "vuedraggable";
+
+export default {
+  // eslint-disable-next-line vue/multi-word-component-names
+  name: "Board",
+  components: {
+    draggable
+  },
+  data() {
+    return {
+      newTask: "",
+      arrBackLog: [
+        { id: 1, name: "Code Sign Up Page" },
+        { id: 2, name: "Test Dashboard" },
+        { id: 3, name: "Style Registration" },
+        { id: 4, name: "Help with Designs" }
+      ],
+      arrInProgress: [],
+      arrTested: [],
+      arrDone: [],
+      selectedTask: null,
+      searchText: ""
+    };
+  },
+  methods: {
+    add() {
+      if (this.newTask) {
+        this.arrBackLog.push({ id: Date.now(), name: this.newTask });
+        this.newTask = "";
+      }
+    },
+    editTask(task) {
+      this.selectedTask = task;
+    },
+    updateTask() {
+      this.selectedTask = null;
+    },
+    deleteTask(taskArray, task) {
+      const index = taskArray.findIndex(item => item.id === task.id);
+      if (index !== -1) {
+        taskArray.splice(index, 1);
+      }
+    }
+  },
+  computed: {
+    filteredBacklog() {
+      if (!this.searchText) {
+        return this.arrBackLog;
+      }
+      const searchTerm = this.searchText.toLowerCase();
+      return this.arrBackLog.filter(task =>
+        task.name.toLowerCase().includes(searchTerm)
+      );
+    }
+  }
+};
+</script>
+
+<style>
+/* light stylings for the kanban columns */
+.kanban-column {
+  min-height: 300px;
+}
+</style>
+  
