@@ -1,0 +1,233 @@
+package com.vijay;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.http.ResponseEntity;
+
+import com.vijay.controller.KanbanController;
+import com.vijay.entity.Task;
+
+@SpringBootApplication
+public class KanbanBoardApplication implements CommandLineRunner{
+	
+	  @Autowired
+	  private KanbanController kanbanController;
+
+	   
+	public static void main(String[] args) {
+		SpringApplication.run(KanbanBoardApplication.class, args);
+	}
+
+	@Override
+	public void run(String... args) throws Exception {
+		/*
+		
+		// Create a new task 
+		 
+        Task newTask = new Task(9, "Task 9");
+        // Add the task to the desired column
+        ResponseEntity<String> response = kanbanController.insertTask("Backlog", newTask);
+        // Print the response message
+        System.out.println(response.getBody());
+		
+        // Delete a task by its ID
+        int taskIdToDelete = 5;
+        // Delete the task from the desired column
+        ResponseEntity<String> deleteResponse = kanbanController.deleteTask(taskIdToDelete);
+        // Print the response message
+        System.out.println(deleteResponse.getBody());
+         */
+        
+        // Update a task
+        int taskIdToUpdate = 3;
+        Task updatedTask = new Task(taskIdToUpdate, "Updated Task 9");
+        // Update the task in the appropriate column
+        ResponseEntity<String> updateResponse = kanbanController.updateTask(taskIdToUpdate, updatedTask);
+        // Print the update response message
+        System.out.println(updateResponse.getBody());
+       
+     
+        // Search for a task
+        int taskIdToSearch = 7;
+        // Search the task in the columns
+        ResponseEntity<Task> searchResponse = kanbanController.searchTask(taskIdToSearch);
+        // Print the search response task details
+        Task searchedTask = searchResponse.getBody();
+        if (searchedTask != null) {
+            System.out.println("Searched Task:");
+            System.out.println("ID: " + searchedTask.getId());
+            System.out.println("Name: " + searchedTask.getName());
+        } else {
+            System.out.println("Task not found.");
+        }
+        
+
+        
+        
+        /*
+         
+          //http://localhost:7171/api/columns/task/Backlog   //not working
+		     {
+             "id": 9,
+             "name": "Task 9"
+             }
+             
+Delete Task:      //not working
+Method: DELETE
+Endpoint: http://localhost:7171/api/columns/task/{taskId}
+Replace {taskId} with the ID of the task you want to delete.
+
+Search Task:  // working
+Method: GET 
+Endpoint: http://localhost:7171/api/columns/task/{taskId}
+
+Update Task:   // working
+Method: PUT
+Endpoint: http://localhost:7171/api/columns/task/{taskId}
+Replace {taskId} with the ID of the task you want to update.
+
+{
+  "id": {taskId},
+  "name": "Updated Task Name"
+}
+
+
+         
+         */
+         
+		
+	}
+
+}
+
+
+=============================================================================
+package com.vijay.controller;
+
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.vijay.entity.Column;
+import com.vijay.entity.Task;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
+/* @CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(
+        origins = "*",
+        maxAge = 3600
+)*/
+@RestController
+@RequestMapping("/api/columns")
+public class KanbanController {
+
+    private List<Column> columns;
+
+    public KanbanController() {
+        columns = initializeColumns();
+    }
+
+    @GetMapping
+    public List<Column> getColumns() {
+        return columns;
+    }
+
+    @PutMapping("/task/{taskId}")
+    public ResponseEntity<String> updateTask(@PathVariable int taskId, @RequestBody Task updatedTask) {
+        for (Column column : columns) {
+            for (Task task : column.getTasks()) {
+                if (task.getId() == taskId) {
+                    task.setName(updatedTask.getName());
+                    return ResponseEntity.ok("Task updated successfully");
+                }
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/task/{taskId}")
+    public ResponseEntity<String> deleteTask(@PathVariable int taskId) {
+        for (Column column : columns) {
+            Iterator<Task> iterator = column.getTasks().iterator();
+            while (iterator.hasNext()) {
+                Task task = iterator.next();
+                if (task.getId() == taskId) {
+                    iterator.remove();
+                    return ResponseEntity.ok("Task deleted successfully");
+                }
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/task/{taskId}")
+    public ResponseEntity<Task> searchTask(@PathVariable int taskId) {
+        for (Column column : columns) {
+            for (Task task : column.getTasks()) {
+                if (task.getId() == taskId) {
+                    return ResponseEntity.ok(task);
+                }
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @PostMapping("/task/{columnName}")
+    public ResponseEntity<String> insertTask(@PathVariable String columnName, @RequestBody Task newTask) {
+        for (Column column : columns) {
+            if (column.getTitle().equalsIgnoreCase(columnName)) {
+                column.getTasks().add(newTask);
+                return ResponseEntity.ok("Task inserted successfully");
+            }
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+
+    private List<Column> initializeColumns() {
+        Task task1 = new Task(1, "Task 1");
+        Task task2 = new Task(2, "Task 2");
+        Task task3 = new Task(3, "Task 3");
+        Task task4 = new Task(4, "Task 4");
+        Task task5 = new Task(5, "Task 5");
+        Task task6 = new Task(6, "Task 6");
+        Task task7 = new Task(7, "Task 7");
+        Task task8 = new Task(8, "Task 8");
+
+        Column backlogColumn = new Column("Backlog", new ArrayList<>(Arrays.asList(task1, task2, task3)));
+        Column inProgressColumn = new Column("In Progress", new ArrayList<>(Arrays.asList(task4, task5)));
+        Column doneColumn = new Column("Done", new ArrayList<>(Arrays.asList(task6, task7, task8)));
+
+        return new ArrayList<>(Arrays.asList(backlogColumn, inProgressColumn, doneColumn));
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
