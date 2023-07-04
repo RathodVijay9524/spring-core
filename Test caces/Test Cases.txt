@@ -1,0 +1,125 @@
+import { mount } from '@vue/test-utils';
+import KanbanBoard from '@/components/KanbanBoard.vue';
+import axios from 'axios';
+
+jest.mock('axios');
+
+describe('KanbanBoard', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = mount(KanbanBoard);
+  });
+
+  afterEach(() => {
+    wrapper.destroy();
+  });
+
+  it('fetches tasks on component mount', async () => {
+    const columns = [
+      { title: 'Backlog', tasks: [] },
+      { title: 'In Progress', tasks: [] },
+      { title: 'Done', tasks: [] },
+    ];
+
+    axios.get.mockResolvedValueOnce({ data: columns });
+
+    await wrapper.vm.fetchTasks();
+
+    expect(wrapper.vm.columns).toEqual(columns);
+  });
+
+  it('filters tasks based on search query', () => {
+    wrapper.vm.columns = [
+      { title: 'Backlog', tasks: [{ id: 1, name: 'Task 1' }, { id: 2, name: 'Task 2' }] },
+      { title: 'In Progress', tasks: [{ id: 3, name: 'Task 3' }] },
+      { title: 'Done', tasks: [] },
+    ];
+
+    wrapper.vm.searchQuery = 'Task 1';
+
+    wrapper.vm.filterTasks();
+
+    expect(wrapper.vm.filteredTasks).toEqual([[{ id: 1, name: 'Task 1' }], [], []]);
+  });
+
+  it('opens create task popup', () => {
+    wrapper.find('button').trigger('click');
+
+    expect(wrapper.vm.isCreatePopupActive).toBe(true);
+  });
+
+  it('closes create task popup', () => {
+    wrapper.vm.isCreatePopupActive = true;
+
+    wrapper.vm.closeCreatePopup();
+
+    expect(wrapper.vm.isCreatePopupActive).toBe(false);
+  });
+
+  // Add more test cases for other methods
+
+});
+=======================================================================================
+import { shallowMount } from '@vue/test-utils';
+import KanbanBoard from '@/components/KanbanBoard.vue';
+import axios from 'axios';
+
+jest.mock('axios');
+
+describe('KanbanBoard', () => {
+  let wrapper;
+
+  beforeEach(() => {
+    wrapper = shallowMount(KanbanBoard);
+  });
+
+  afterEach(() => {
+    wrapper.destroy();
+  });
+
+  it('fetches tasks on component mount', async () => {
+    const columns = [
+      { title: 'Backlog', tasks: [] },
+      { title: 'In Progress', tasks: [] },
+      { title: 'Done', tasks: [] },
+    ];
+
+    axios.get.mockResolvedValueOnce({ data: columns });
+
+    await wrapper.vm.fetchTasks();
+
+    expect(wrapper.vm.columns).toEqual(columns);
+  });
+
+  it('filters tasks based on search query', () => {
+    wrapper.vm.columns = [
+      { title: 'Backlog', tasks: [{ id: 1, name: 'Task 1' }, { id: 2, name: 'Task 2' }] },
+      { title: 'In Progress', tasks: [{ id: 3, name: 'Task 3' }] },
+      { title: 'Done', tasks: [] },
+    ];
+
+    wrapper.vm.searchQuery = 'Task 1';
+
+    wrapper.vm.filterTasks();
+
+    expect(wrapper.vm.filteredTasks).toEqual([[{ id: 1, name: 'Task 1' }], [], []]);
+  });
+
+  it('opens create task popup', () => {
+    wrapper.find('button').trigger('click');
+
+    expect(wrapper.vm.isCreatePopupActive).toBe(true);
+  });
+
+  it('closes create task popup', () => {
+    wrapper.vm.isCreatePopupActive = true;
+
+    wrapper.vm.closeCreatePopup();
+
+    expect(wrapper.vm.isCreatePopupActive).toBe(false);
+  });
+
+  // Add more test cases for other methods
+
+});
